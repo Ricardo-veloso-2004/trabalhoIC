@@ -1,0 +1,502 @@
+[
+    {
+        "id": "f743126823c748d0",
+        "type": "tab",
+        "label": "Flow 11",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "4f88dbe261307a1a",
+        "type": "mqtt in",
+        "z": "f743126823c748d0",
+        "name": "",
+        "topic": "enchente/nivel",
+        "qos": "2",
+        "datatype": "auto-detect",
+        "broker": "975af8c0ac4474e0",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 70,
+        "y": 200,
+        "wires": [
+            [
+                "a215bcbf9999ea27",
+                "604f4323840b6b9c",
+                "8f33f8e60ce88418"
+            ]
+        ]
+    },
+    {
+        "id": "8261763178378db3",
+        "type": "inject",
+        "z": "f743126823c748d0",
+        "name": "",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 130,
+        "y": 360,
+        "wires": [
+            [
+                "111a25f1f0a738e9"
+            ]
+        ]
+    },
+    {
+        "id": "111a25f1f0a738e9",
+        "type": "http request",
+        "z": "f743126823c748d0",
+        "name": "",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://api.ipma.pt/open-data/forecast/meteorology/cities/daily/1040200.json",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 290,
+        "y": 360,
+        "wires": [
+            [
+                "5a9a915c8e9a6d72",
+                "2b12e31458bb74f1"
+            ]
+        ]
+    },
+    {
+        "id": "5a9a915c8e9a6d72",
+        "type": "debug",
+        "z": "f743126823c748d0",
+        "name": "debug 32",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 460,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "2b12e31458bb74f1",
+        "type": "json",
+        "z": "f743126823c748d0",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 450,
+        "y": 360,
+        "wires": [
+            [
+                "95078da825b0f21d"
+            ]
+        ]
+    },
+    {
+        "id": "95078da825b0f21d",
+        "type": "function",
+        "z": "f743126823c748d0",
+        "name": "prec",
+        "func": "let previsoes = msg.payload.data;\n\nlet chart = {\n    labels: [],\n    data: [[]] // apenas precipitação\n};\n\nfor (let i = 0; i < previsoes.length; i++) {\n    chart.labels.push(previsoes[i].forecastDate);\n    chart.data[0].push(parseFloat(previsoes[i].precipitaProb || 0));\n}\n\nflow.set(\"previsao\", previsoes); // ← linha essencial para o assistente de voz\n\nreturn { payload: chart };\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 360,
+        "wires": [
+            [
+                "dd14b6a2d6159a7b",
+                "e224c37e1ecc57f4"
+            ]
+        ]
+    },
+    {
+        "id": "dd14b6a2d6159a7b",
+        "type": "ui_template",
+        "z": "f743126823c748d0",
+        "group": "2be21329c9de3ae9",
+        "name": "",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "format": "<canvas id=\"graficoPrecip\" width=\"400\" height=\"200\"></canvas>\n\n<script>\n    (function(scope) {\n    let chart;\n\n    scope.$watch('msg.payload', function(payload) {\n        if (!payload || !payload.labels || !payload.data) return;\n\n        const ctx = document.getElementById(\"graficoPrecip\").getContext(\"2d\");\n\n        if (chart) chart.destroy();\n\n        chart = new Chart(ctx, {\n            type: 'line',\n            data: {\n                labels: payload.labels,\n                datasets: [{\n                    label: 'Precipitação (%)',\n                    data: payload.data[0],\n                    borderColor: 'gray',\n                    backgroundColor: 'rgba(150,150,150,0.4)',\n                    tension: 0.3,\n                    fill: true\n                }]\n            },\n            options: {\n                responsive: true,\n                plugins: {\n                    legend: { position: 'top' }\n                },\n                scales: {\n                    y: {\n                        min: 0,\n                        max: 100,\n                        title: {\n                            display: true,\n                            text: 'Precipitação (%)'\n                        }\n                    },\n                    x: {\n                        title: {\n                            display: true,\n                            text: 'Data'\n                        }\n                    }\n                }\n            }\n        });\n    });\n})(scope);\n</script>",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 740,
+        "y": 400,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a215bcbf9999ea27",
+        "type": "ui_gauge",
+        "z": "f743126823c748d0",
+        "name": "",
+        "group": "a18a2422101d95d1",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "gauge",
+        "label": "units",
+        "format": "{{value}}",
+        "min": 0,
+        "max": "400",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "diff": false,
+        "className": "",
+        "x": 290,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "604f4323840b6b9c",
+        "type": "function",
+        "z": "f743126823c748d0",
+        "name": "avaliaçao de risco",
+        "func": "const nivel = parseFloat(msg.payload);  // Vem do MQTT\n\n// Recuperar previsão salva pela função 'prec'\nconst previsoes = flow.get(\"previsao\") || [];\n\nif (previsoes.length < 5) {\n    node.warn(\"Sem previsão suficiente. Ignorando avaliação.\");\n    return null;\n}\n\n// Extrair valores de precipitação dos próximos 5 dias\nlet chuvaDias = [];\nfor (let i = 0; i < 5; i++) {\n    chuvaDias.push(parseFloat(previsoes[i]?.precipitaProb || 0));\n}\n\nconst chuvaHoje = chuvaDias[0];\nconst chuvaMedia = chuvaDias.reduce((a, b) => a + b, 0) / chuvaDias.length;\n\n// === AVALIAÇÃO DE RISCO ===\nlet risco = false;\nlet motivo = \"\";\n\nif (nivel <= 50) {\n    risco = true;\n    motivo = \"⚠️ Nível da barragem baixo, possibilidade de seca\";\n} else if (nivel >= 350) {\n    risco = true;\n    motivo = \"⚠️ Nível da barragem atingiu o limite crítico!\";\n} else if (nivel >= 300 && chuvaMedia > 60) {\n    risco = true;\n    motivo = \"⚠️ Nível elevado e previsão de chuva contínua!\";\n} else if (chuvaHoje > 80 && nivel >= 280) {\n    risco = true;\n    motivo = \"⚠️ Precipitação intensa com nível já elevado!\";\n}\n\n// === CONTROLO DE ALERTA E DURAÇÃO ===\nlet alertaAnterior = flow.get(\"alertaAtivo\") || false;\nlet enviarAlerta = false;\nlet horaInicioAlerta = flow.get(\"horaInicioAlerta\") || null;\nlet duracaoAlertaMin = 0;\n\nif (risco && !alertaAnterior) {\n    enviarAlerta = true;\n    flow.set(\"alertaAtivo\", true);\n    horaInicioAlerta = new Date().toISOString();\n    flow.set(\"horaInicioAlerta\", horaInicioAlerta);\n    node.warn(\"🔔 Início de alerta\");\n} else if (risco && alertaAnterior) {\n    if (horaInicioAlerta) {\n        const agora = new Date();\n        const inicio = new Date(horaInicioAlerta);\n\n        if (!isNaN(inicio.getTime()) && !isNaN(agora.getTime())) {\n            duracaoAlertaMin = Math.round((agora.getTime() - inicio.getTime()) / 60000);\n        } else {\n            node.warn(\"⛔ Datas inválidas ao calcular duração do alerta.\");\n        }\n    } else {\n        node.warn(\"⛔ horaInicioAlerta ausente ao tentar calcular duração.\");\n    }\n} else if (!risco && alertaAnterior) {\n    flow.set(\"alertaAtivo\", false);\n    flow.set(\"horaInicioAlerta\", null);\n    node.warn(\"✅ Fim do alerta\");\n}\n\n// === SAÍDA FINAL ===\nmsg.payload = {\n    status: risco ? \"ALERTA\" : \"NORMAL\",\n    risco: risco,\n    motivo: motivo,\n    nivel: nivel,\n    chuvaHoje: Math.round(chuvaHoje * 10) / 10,\n    chuvaMedia: Math.round(chuvaMedia * 10) / 10,\n    enviarAlerta: enviarAlerta,\n    duracaoAlertaMin: duracaoAlertaMin\n};\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 330,
+        "y": 200,
+        "wires": [
+            [
+                "c30f7b5bcd2dee0b",
+                "2de2e07fd90a240e",
+                "5598677be4d1e8f1"
+            ]
+        ]
+    },
+    {
+        "id": "e224c37e1ecc57f4",
+        "type": "function",
+        "z": "f743126823c748d0",
+        "name": "risco de chuva",
+        "func": "let previsoes = flow.get(\"previsao\") || [];\n\nlet chuvaDias = [];\nfor (let i = 0; i < 5; i++) {\n    chuvaDias.push(parseFloat(previsoes[i]?.precipitaProb || 0));\n}\n\nmsg.payload = {\n  hoje: chuvaDias[0],\n  dias: chuvaDias\n};\nmsg.topic = \"chuva\";\n\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 360,
+        "wires": [
+            [
+                "2653d34c77c3f811"
+            ]
+        ]
+    },
+    {
+        "id": "2653d34c77c3f811",
+        "type": "debug",
+        "z": "f743126823c748d0",
+        "name": "debug 33",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 920,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "c30f7b5bcd2dee0b",
+        "type": "debug",
+        "z": "f743126823c748d0",
+        "name": "debug 34",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 500,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "2de2e07fd90a240e",
+        "type": "ui_template",
+        "z": "f743126823c748d0",
+        "group": "02e0819bf1eed841",
+        "name": "aviso",
+        "order": 0,
+        "width": 0,
+        "height": 0,
+        "format": "<div style=\"color: {{msg.payload.risco ? 'red' : 'green'}}; font-weight: bold;\">\n    {{msg.payload.status}} - {{msg.payload.motivo}}\n</div>",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 490,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "899a7105eb2679f6",
+        "type": "telegram receiver",
+        "z": "f743126823c748d0",
+        "name": "",
+        "bot": "e2b6237941248f0f",
+        "saveDataDir": "",
+        "filterCommands": false,
+        "x": 150,
+        "y": 460,
+        "wires": [
+            [
+                "e6aaf803981d05ee"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "e6aaf803981d05ee",
+        "type": "debug",
+        "z": "f743126823c748d0",
+        "name": "debug 31",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 340,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "a08050eb640c6e58",
+        "type": "telegram sender",
+        "z": "f743126823c748d0",
+        "name": "",
+        "bot": "e2b6237941248f0f",
+        "haserroroutput": false,
+        "outputs": 1,
+        "x": 970,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5598677be4d1e8f1",
+        "type": "switch",
+        "z": "f743126823c748d0",
+        "name": "",
+        "property": "payload.enviarAlerta",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "true"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 590,
+        "y": 200,
+        "wires": [
+            [
+                "cb31041d459580cb"
+            ]
+        ]
+    },
+    {
+        "id": "cb31041d459580cb",
+        "type": "function",
+        "z": "f743126823c748d0",
+        "name": "function 6",
+        "func": "msg.payload = {\n  chatId: 6136975084,  // ← usa teu chatId real\n  type: \"message\",\n  content: `🚨 ALERTA DE RISCO🚨\n\n🌊 Nível: ${msg.payload.nivel} cm\n🌧️ Chuva hoje: ${msg.payload.chuvaHoje} mm\n📊 Média 5 dias: ${msg.payload.chuvaMedia} mm\n\n ${msg.payload.motivo}`\n};\nreturn msg;\n\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 760,
+        "y": 200,
+        "wires": [
+            [
+                "a08050eb640c6e58"
+            ]
+        ]
+    },
+    {
+        "id": "8f33f8e60ce88418",
+        "type": "influxdb out",
+        "z": "f743126823c748d0",
+        "influxdb": "72c51dcb73d15a93",
+        "name": "",
+        "measurement": "nivel",
+        "precision": "",
+        "retentionPolicy": "",
+        "database": "database",
+        "precisionV18FluxV20": "ms",
+        "retentionPolicyV18Flux": "",
+        "org": "ipb",
+        "bucket": "NodeRed",
+        "x": 340,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "975af8c0ac4474e0",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "broker.emqx.io",
+        "port": 1883,
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "5",
+        "keepalive": 60,
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "2be21329c9de3ae9",
+        "type": "ui_group",
+        "name": "precipitaçao",
+        "tab": "ae42797e305fde89",
+        "order": 4,
+        "disp": true,
+        "width": 6,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "a18a2422101d95d1",
+        "type": "ui_group",
+        "name": "nivel da agua",
+        "tab": "ae42797e305fde89",
+        "order": 1,
+        "disp": true,
+        "width": 6,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "02e0819bf1eed841",
+        "type": "ui_group",
+        "name": "Alerta",
+        "tab": "ae42797e305fde89",
+        "order": 4,
+        "disp": true,
+        "width": 6,
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "e2b6237941248f0f",
+        "type": "telegram bot",
+        "botname": "@BarragemAlertabot",
+        "usernames": "",
+        "chatids": "",
+        "baseapiurl": "",
+        "testenvironment": false,
+        "updatemode": "polling",
+        "pollinterval": 300,
+        "usesocks": false,
+        "sockshost": "",
+        "socksprotocol": "socks5",
+        "socksport": 6667,
+        "socksusername": "anonymous",
+        "sockspassword": "",
+        "bothost": "",
+        "botpath": "",
+        "localbothost": "0.0.0.0",
+        "localbotport": 8443,
+        "publicbotport": 8443,
+        "privatekey": "",
+        "certificate": "",
+        "useselfsignedcertificate": false,
+        "sslterminated": false,
+        "verboselogging": false
+    },
+    {
+        "id": "72c51dcb73d15a93",
+        "type": "influxdb",
+        "hostname": "127.0.0.1",
+        "port": 8086,
+        "protocol": "http",
+        "database": "database",
+        "name": "NodeRed",
+        "usetls": false,
+        "tls": "",
+        "influxdbVersion": "2.0",
+        "url": "http://localhost:8086",
+        "timeout": 10,
+        "rejectUnauthorized": true
+    },
+    {
+        "id": "ae42797e305fde89",
+        "type": "ui_tab",
+        "name": "barragem",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
