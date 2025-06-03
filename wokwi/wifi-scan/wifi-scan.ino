@@ -19,10 +19,11 @@ const char* mqtt_topic = "enchente/nivel";
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+unsigned long lastTime = 0;
+const long interval = 10000;  // 10 segundos
+
 void setup_wifi() {
-  delay(10);
   Serial.print("Ligando ao WiFi: ");
-  Serial.println(ssid);
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -49,36 +50,36 @@ long lerDistancia() {
   delayMicroseconds(10);
   digitalWrite(TRIG, LOW);
   long duracao = pulseIn(ECHO, HIGH);
-  long distancia = duracao * 0.034 / 2;
-  return distancia;
+  return duracao * 0.034 / 2;
 }
 
 void loop() {
-  // Garante conexão MQTT
   if (!client.connected()) {
     while (!client.connect("ESP32Enchente")) {
       delay(1000);
     }
   }
 
-  long nivel = lerDistancia();
-  Serial.print("Nível da água: ");
-  Serial.print(nivel);
-  Serial.println(" cm");
+  client.loop();  // mantém conexão MQTT
 
-  // Envia MQTT
-  String mensagem = String(nivel);
-  client.publish(mqtt_topic, mensagem.c_str());
+  unsigned long now = millis();
+  if (now - lastTime >= interval) {
+    lastTime = now;
 
-  // Alerta se passar do limite de 350 cm
-  if (nivel >= 350) {
-    digitalWrite(LED, HIGH);
-    digitalWrite(BUZZER, HIGH);
-  } else {
-    digitalWrite(LED, LOW);
-    digitalWrite(BUZZER, LOW);
+    long nivel = lerDistancia();
+    Serial.print("Nível da água: ");
+    Serial.print(nivel);
+    Serial.println(" cm");
+
+    String mensagem = String(nivel);
+    client.publish(mqtt_topic, mensagem.c_str());
+
+    if (nivel >= 350) {
+      digitalWrite(LED, HIGH);
+      digitalWrite(BUZZER, HIGH);
+    } else {
+      digitalWrite(LED, LOW);
+      digitalWrite(BUZZER, LOW);
+    }
   }
-
-  // Espera 10 segundos
-  delay(10000);
 }
